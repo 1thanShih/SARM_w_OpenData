@@ -497,9 +497,44 @@
   <!-- ════ STEP 1 ════ -->
   <section id="step1">
     <h2><span class="num">1</span>架設 lerobot-annotate</h2>
-    <p>在本機（或 Colab）把工具跑起來。</p>
+    <p>在本機（或 Colab）把工具跑起來。下面提供兩種方式：<strong>Docker（推薦）</strong>與 <strong>venv</strong>。</p>
 
-    <h3>1-A：Clone 並安裝</h3>
+    <h3>1-A（推薦）：用 Docker 一鍵啟動</h3>
+    <p>本專案 <code>lerobot-annotate/</code> 內已附 <code>Dockerfile</code>，Image 內含 ffmpeg + 所有 Python 依賴，免處理本機 libssl / Python 版本問題。</p>
+    <div class="code-wrap">
+      <div class="code-header">
+        <span>bash — 在你的本機終端執行</span>
+      </div>
+      <pre><code><span class="cm"># 進入工具目錄並 build image（首次約 3–5 分鐘）</span>
+<span class="fn">cd</span> lerobot-annotate
+<span class="fn">docker</span> build <span class="op">-t</span> lerobot-annotate:latest .
+
+<span class="cm"># 背景啟動容器；cache / exports 掛到本機 host 方便事後取出</span>
+<span class="fn">mkdir</span> <span class="op">-p</span> ~/lerobot_annotate_cache ~/lerobot_annotate_exports
+<span class="fn">docker</span> run <span class="op">-d</span> <span class="op">--name</span> lerobot-annotate \
+  <span class="op">-p</span> <span class="nb">7860</span>:<span class="nb">7860</span> \
+  <span class="op">-v</span> ~/lerobot_annotate_cache:/data/cache \
+  <span class="op">-v</span> ~/lerobot_annotate_exports:/data/exports \
+  lerobot-annotate:latest
+
+<span class="cm"># 確認跑起來</span>
+<span class="fn">docker</span> ps <span class="op">--filter</span> name=lerobot-annotate
+<span class="fn">docker</span> logs <span class="op">-f</span> lerobot-annotate    <span class="cm"># Ctrl+C 只離開 log，不會停容器</span></code></pre>
+    </div>
+    <p>開瀏覽器，進入 <code>http://localhost:7860</code>，看到標記界面即代表成功。</p>
+
+    <div class="callout tip">
+      <div class="icon">💡</div>
+      <p>
+        常用維運指令：<br/>
+        停止：<code>docker stop lerobot-annotate</code>
+        重啟：<code>docker start lerobot-annotate</code>
+        移除：<code>docker rm -f lerobot-annotate</code><br/>
+        Export 檔案會留在本機 <code>~/lerobot_annotate_exports/</code>，下一個 Step 直接用這條路徑。
+      </p>
+    </div>
+
+    <h3>1-B（替代）：用 venv 在本機直接跑</h3>
     <div class="code-wrap">
       <div class="code-header">
         <span>bash — 在你的本機終端執行</span>
@@ -508,18 +543,15 @@
 <span class="fn">git</span> clone https://github.com/huggingface/lerobot-annotate.git
 <span class="fn">cd</span> lerobot-annotate
 
-<span class="cm"># 建立 Python 虛擬環境</span>
-<span class="fn">python</span> -m venv .venv
+<span class="cm"># 建立 Python 虛擬環境（建議用 3.10+ 系統 Python，不要用 NCS / toolchain Python）</span>
+<span class="fn">python3</span> -m venv .venv
 <span class="fn">source</span> .venv/bin/activate        <span class="cm"># Windows: .venv\Scripts\activate</span>
 
 <span class="cm"># 安裝依賴</span>
-<span class="fn">pip</span> install -r backend/requirements.txt</code></pre>
-    </div>
+<span class="fn">pip</span> install -r backend/requirements.txt
 
-    <h3>1-B：啟動伺服器</h3>
-    <div class="code-wrap">
-      <div class="code-header"><span>bash</span></div>
-      <pre><code><span class="fn">uvicorn</span> backend.app:app <span class="op">--reload</span> <span class="op">--port</span> <span class="nb">7860</span></code></pre>
+<span class="cm"># 啟動伺服器</span>
+<span class="fn">uvicorn</span> backend.app:app <span class="op">--reload</span> <span class="op">--port</span> <span class="nb">7860</span></code></pre>
     </div>
 
     <p>開瀏覽器，進入 <code>http://localhost:7860</code>，看到標記界面即代表成功。</p>

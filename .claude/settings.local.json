@@ -15,7 +15,24 @@
       "mcp__claude_ai_Hugging_Face__hf_hub_query",
       "mcp__claude_ai_Hugging_Face__hf_doc_fetch",
       "WebFetch(domain:clvrai.github.io)",
-      "Bash(python3 *)"
+      "Bash(python3 *)",
+      "Bash(git stash *)",
+      "Bash(git reflog *)",
+      "Bash(git update-ref *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git gc *)",
+      "Bash(git rev-list *)",
+      "Bash(git cat-file *)",
+      "Bash(awk '$1==\"blob\" && $3>10485760')",
+      "Bash(sort -k3 -n -r)",
+      "Bash(xargs -n1 git update-ref -d)",
+      "Bash(git branch *)",
+      "Bash(git push *)",
+      "Bash(/home/ethan/Desktop/SARM_w_OpenData/lerobot-annotate/.venv/bin/python *)",
+      "Bash(docker --version)",
+      "Bash(docker build *)",
+      "Bash(node -c app.js)"
     ]
   }
 }
