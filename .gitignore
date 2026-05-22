@@ -1,0 +1,26 @@
+# ── Jupyter ──────────────────────────────────────────
+.ipynb_checkpoints/
+
+# ── Python ───────────────────────────────────────────
+__pycache__/
+*.py[cod]
+
+# ── Training outputs ─────────────────────────────────
+outputs/
+checkpoints/
+wandb/
+
+# ── Pipeline artifacts ───────────────────────────────
+annotation_viz/
+subtask_viz/
+sarm_predictions_viz/
+sarm_progress.parquet
+lerobot_annotate_export/
+sarm_ready_dataset/
+
+# ── Logs ─────────────────────────────────────────────
+*.log
+
+# ── Misc ─────────────────────────────────────────────
+*.tmp
+*.bak

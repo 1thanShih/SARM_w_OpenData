@@ -1,0 +1,15 @@
+{
+    "ROS2.distro": "rolling",
+    "python.autoComplete.extraPaths": [
+        "/home/ethan/ros_test/install/ros_test/lib/python3.12/site-packages",
+        "/home/ethan/Desktop/ros2_ws/install/tutorial/lib/python3.12/site-packages",
+        "/opt/ros/rolling/opt/gz_math_vendor/lib/python",
+        "/opt/ros/rolling/lib/python3.12/site-packages"
+    ],
+    "python.analysis.extraPaths": [
+        "/home/ethan/ros_test/install/ros_test/lib/python3.12/site-packages",
+        "/home/ethan/Desktop/ros2_ws/install/tutorial/lib/python3.12/site-packages",
+        "/opt/ros/rolling/opt/gz_math_vendor/lib/python",
+        "/opt/ros/rolling/lib/python3.12/site-packages"
+    ]
+}

@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:github.com)",
+      "WebSearch",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "mcp__claude_ai_Hugging_Face__hub_repo_search",
+      "WebFetch(domain:medium.com)",
+      "WebFetch(domain:apxml.com)",
+      "WebFetch(domain:colab.research.google.com)",
+      "WebFetch(domain:www.mintlify.com)",
+      "WebFetch(domain:arxiv.org)",
+      "WebFetch(domain:qianzhong-chen.github.io)",
+      "mcp__claude_ai_Hugging_Face__hub_repo_details",
+      "mcp__claude_ai_Hugging_Face__hf_hub_query",
+      "mcp__claude_ai_Hugging_Face__hf_doc_fetch",
+      "WebFetch(domain:clvrai.github.io)",
+      "Bash(python3 *)"
+    ]
+  }
+}
