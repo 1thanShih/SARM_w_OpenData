@@ -25,6 +25,10 @@ sarm_ready_dataset/
 *.tmp
 *.bak
 
+# ── Secrets & large artifacts ────────────────────────
+token.txt
+*.zip
+
 # ── VSCode IntelliSense cache ────────────────────────
 .vscode/browse.vc.db
 .vscode/browse.vc.db-shm

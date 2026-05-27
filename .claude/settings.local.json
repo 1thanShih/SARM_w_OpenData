@@ -32,7 +32,21 @@
       "Bash(/home/ethan/Desktop/SARM_w_OpenData/lerobot-annotate/.venv/bin/python *)",
       "Bash(docker --version)",
       "Bash(docker build *)",
-      "Bash(node -c app.js)"
+      "Bash(node -c app.js)",
+      "Bash(rtk ls *)",
+      "Bash(rtk read *)",
+      "Bash(rtk pip *)",
+      "Bash(rtk grep *)",
+      "Bash(grep -v \"^\\\\s*$\")",
+      "Bash(jobs)",
+      "Bash(gh api *)",
+      "Bash(rtk curl *)",
+      "Bash(rtk wc *)",
+      "Bash(curl -sf https://raw.githubusercontent.com/huggingface/lerobot/main/src/lerobot/rewards/factory.py -o /tmp/reward_factory.py)",
+      "Bash(curl -sf https://raw.githubusercontent.com/huggingface/lerobot/main/src/lerobot/rewards/sarm/modeling_sarm.py -o /tmp/sarm_model.py)",
+      "Bash(curl -s \"https://api.github.com/search/code?q=repo:huggingface/lerobot+compute_rabc_weights\" -H \"Accept: application/vnd.github+json\")",
+      "Bash(curl -s \"https://raw.githubusercontent.com/huggingface/lerobot/main/src/lerobot/configs/policies.py\")",
+      "Bash(curl -s \"https://api.github.com/repos/huggingface/lerobot/contents/src/lerobot\")"
     ]
   }
 }
