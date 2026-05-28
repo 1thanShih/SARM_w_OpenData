@@ -12,118 +12,141 @@
 
 **任務四階段**
 
-| # | Subtask |
-|---|---------|
-| 1 | Pick up the phone |
-| 2 | Flip the phone sideways |
-| 3 | Pick up the charging cable and plug it into the phone |
-| 4 | Turn on the power of the extension cord |
+| # | Subtask | subtask_index |
+|---|---------|---------------|
+| 1 | Pick up the phone | 0 |
+| 2 | Flip the phone sideways | 1 |
+| 3 | Pick up the charging cable and plug it into the phone | 2 |
+| 4 | Turn on the power of the extension cord | 3 |
 
 ---
 
 ## Dataset
 
+> ✅ 標注 + 修正已完成，可直接用於訓練（不需再 merge / 標注）。
+
 | 項目 | 內容 |
 |------|------|
-| Source repos | `allenai/19012026-charging-01` ～ `charging-06` |
-| Merged repo | `{user}/charging_bimanual_merged` |
-| Annotated repo | `{user}/charging_bimanual_annotated` |
+| Source repos | `allenai/19012026-charging-01` ～ `charging-06`（共 284 eps） |
+| **訓練用 repo** | **`Lebruhbruh/SARM-opendata-annotated-fixed`** |
 | Model repo | `{user}/sarm-charging-bimanual` |
-| Episodes | 284（6 repos 合計） |
+| Episodes | **273**（284 排除 11 個問題 episodes） |
+| Frames | 585,425 |
 | FPS | 30 |
-| Robot | bi_yam_follower（bimanual） |
-| Camera used | `observation.images.top` |
+| Robot | bi_yam_follower（bimanual，14-dim state） |
+| Cameras | `observation.images.{top,left,right}`，訓練主視角 = `top` |
 | Annotation mode | `dense_only` |
+
+**這個 repo 已處理過的事項：**
+- `subtask_index` 在每個 episode 內依 stage 執行順序 `0 → 1 → 2 → 3` 單調遞增
+- `meta/episodes/*.parquet` 的 `dense_subtask_*` 欄位全部 materialize（無 NULL）
+- `stats.json` 已重算、`v3.0` git tag 已建立
 
 ---
 
-## Quick Start
+## Quick Start（Lite Notebooks）
 
-> 全流程在 `SARM_Training_Colab.ipynb` 執行，平台為 Colab Pro A100 80GB。
+> 推薦流程：三個 **Lite** notebook 都在 Colab Pro A100 80GB 執行，照順序跑即可。
+> （`SARM_Training_Colab.ipynb` 是含 merge / 標注的完整版，資料已備妥時用 Lite 版更快。）
 
-### 1. 開啟 Notebook
+| Notebook | 用途 | 預計時間 |
+|----------|------|---------|
+| `SARM_Sanity_Test_Colab.ipynb` | 200-step 健檢：確認 dense loss 會掉、reward 不是 0 | 5–10 分鐘 |
+| `SARM_Training_Lite.ipynb` | 正式訓練（5000 steps）並 push 模型 | 45–90 分鐘 |
+| `SARM_Predict_Visualization_Lite.ipynb` | 生成「影片 + 同步進度條」MP4 | 約 10 分鐘 |
 
-將 `SARM_Training_Colab.ipynb` 上傳至 Google Colab，確認 GPU 為 A100 80GB。
+### 1. 設定 HuggingFace Token
 
-### 2. 設定 HuggingFace Token
+在每個 notebook 的 Cell 2（使用者設定）填入有 **Write 權限**的 `HF_TOKEN`，
+並確認 `HF_USERNAME` / `ANNOTATED_DATASET` 正確。
 
-在 Colab Secrets 加入 `HF_TOKEN`（需要 Write 權限）。
+### 2. 先跑 Sanity Test（建議）
 
-### 3. 按序執行 Cells
+`SARM_Sanity_Test_Colab.ipynb` 會：
+- 清空 Colab 端 dataset cache 並強制從 Hub 重抓
+- **assert dense annotation 完整**（無 NULL，避免「預測全 0」）
+- 跑 200 steps，解析 log 確認 `dense_*` loss 有在下降
+- 對 ep 21 中段 frame 跑一次推論，確認 reward 不是 0
 
-```
-Cell 1   — 設定變數（repo IDs、subtask 名稱等）
-Cell 1b  — 定義 progress_stage() context manager
-Cell 2   — 安裝 LeRobot + SARM 依賴
-Cell 3   — Transformers 5.x bug 修補（必做）
-Cell 4   — HuggingFace 登入
-Cell 4b  — 合併六個 source datasets → charging_bimanual_merged
-Cell 5   — Dataset 預覽與驗證
-Cell 9/10 — Subtask 標注（VLM 或手動，見下方）
-Cell 12  — SARM 訓練
-Cell 13  — 預測視覺化
-```
+### 3. 正式訓練
 
-### 4. Subtask 標注方式
-
-**選項 A：VLM 自動標注（Qwen3-VL-30B，快但品質不穩定）**
-
-```bash
-python src/lerobot/data_processing/sarm_annotations/subtask_annotation.py \
-  --repo-id {user}/charging_bimanual_merged \
-  --dense-only \
-  --dense-subtasks "Pick up the phone,Flip the phone sideways,..." \
-  --video-key observation.images.top \
-  --skip-existing
-```
-
-**選項 B：手動標注（lerobot-annotate UI，穩定但需人工操作）**
-
-詳見 [`doc/guideline.html`](doc/guideline.html)，用瀏覽器打開查看完整流程。
-
-### 5. 訓練
+`SARM_Training_Lite.ipynb` Cell 7 的訓練指令（SARM 是 `RewardModelConfig`，
+所以用 `--reward_model.type=sarm`，**不是** `--policy.type`）：
 
 ```bash
 lerobot-train \
-  --dataset.repo_id={user}/charging_bimanual_annotated \
-  --policy.type=sarm \
-  --policy.annotation_mode=dense_only \
-  --policy.image_key=observation.images.top \
-  --policy.frame_gap=30 \
-  --batch_size=32 \
+  --dataset.repo_id=Lebruhbruh/SARM-opendata-annotated-fixed \
+  --reward_model.type=sarm \
+  --reward_model.annotation_mode=dense_only \
+  --reward_model.image_key=observation.images.top \
+  --reward_model.state_key=observation.state \
+  --reward_model.n_obs_steps=8 \
+  --reward_model.frame_gap=30 \
+  --reward_model.repo_id={user}/sarm-charging-bimanual \
+  --reward_model.push_to_hub=true \
+  --batch_size=64 \
   --steps=5000 \
-  --policy.repo_id={user}/sarm-charging-bimanual
+  --save_freq=2500 \
+  --tolerance_s=0.001 \
+  --wandb.enable=false
 ```
+
+### 4. 視覺化驗收
+
+`SARM_Predict_Visualization_Lite.ipynb` 生成預測影片，確認 progress 曲線
+在有標注的 episode 上單調遞增（而非黏在 0）。
 
 ---
 
-## Project Progress
+## ⚠️ 已知最大地雷：預測全 0
 
-### ✅ 2026-05-21 — Dataset 切換
+SARM 訓練讀的是 `meta/episodes/*.parquet` 的 `dense_subtask_names` 等欄位，
+**不是** `meta/lerobot_annotations.json`。若大量 episode 該欄為 NULL，
+`find_stage_and_tau` 會回傳 `(0, 0.0)`，dense target ≡ 0，model 塌成「永遠輸出 0」。
 
-- 從 FurnitureBench 切換到 AllenAI `molmoact2-bimanualyam` charging 資料集
-- 確認六個 source repos（`charging-01` ～ `charging-06`），實際 episodes = **284**
-- Cell 4b 完成 `aggregate_datasets()` 合併邏輯，解決 E12 / E13 / E14 / E15 四個合併錯誤
+> 已踩過：`SARM-opendata-annotated-fixed` 早期版本只有 ep 0–7 有 dense 欄位，
+> 265 個是 NULL → 訓練 5000 steps 後預測全 0。
 
-### ✅ 2026-05-22 — 手動標注方案建立
+**push dataset 後必驗：**
 
-- Qwen3-VL-30B 自動標注效果不佳，決定改用手動標注（Route C）
-- 研究 [lerobot-annotate](https://github.com/huggingface/lerobot-annotate) 工具，確認與 SARM 的格式差異
-- 撰寫格式轉換腳本 `convert_annotate_to_sarm.py`（lerobot-annotate output → SARM episodes parquet）
-- 建立完整手動標注教學 [`doc/guideline.html`](doc/guideline.html)
+```python
+import pandas as pd
+df = pd.read_parquet('meta/episodes/chunk-000/file-000.parquet')
+null_cnt = df['dense_subtask_names'].isna().sum()
+assert null_cnt == 0, f'{null_cnt}/{len(df)} episodes 缺 dense_subtask_names → SARM 會塌'
+```
 
-### 🔄 進行中 — 手動標注執行
+完整排查 checklist 見 `CLAUDE.md` 的「SARM 預測全 0 的除錯 checklist」。
 
-- [ ] 架設 lerobot-annotate 本機伺服器
-- [ ] 對各 source repo 各抽 5 集（共 30 集）做手動標記
-- [ ] 執行格式轉換並驗證 `temporal_proportions_dense.json`
-- [ ] Push annotated dataset 到 HF Hub
+---
 
-### ⏳ 待進行 — SARM 訓練
+## Helper Scripts
 
-- [ ] 標注驗證通過後，在 Colab A100 執行 SARM 訓練（5,000 steps）
-- [ ] 預測視覺化確認 progress 曲線單調遞增
-- [ ] （Optional）RA-BC 訓練
+資料準備 / 修復用的獨立腳本（皆需 `export HF_TOKEN=hf_xxxx`）：
+
+| 腳本 | 說明 |
+|------|------|
+| `reexport_dataset.py` | 從原始標注 repo 讀資料、排除問題 episodes、修正 `subtask_index` 順序、push 到自己的 repo |
+| `materialize_dense_annotations.py` | 把 `lerobot_annotations.json` 的 subtask materialize 進 `meta/episodes/*.parquet` 的 `dense_subtask_*` 欄（修「預測全 0」的核心步驟） |
+| `recompute_stats.py` | 重算 `stats.json`（scalar/vector 全重算，image stats 保留），補 `subtask_index` / `task_index_high_level` |
+| `copy_missing_videos.py` | 把 merged repo 缺的 left/right camera videos 補進 annotated repo |
+| `test_annotation_quality.py` | 標注品質驗證（PASS/FAIL，非零 exit code 代表有 FAIL）；`--repo-id` 可換 repo |
+
+---
+
+## Key Files
+
+| 檔案 | 說明 |
+|------|------|
+| `SARM_Training_Lite.ipynb` | 正式訓練 Notebook（資料已備妥時用） |
+| `SARM_Sanity_Test_Colab.ipynb` | 200-step 健檢 Notebook |
+| `SARM_Predict_Visualization_Lite.ipynb` | 預測視覺化（影片 + 進度條） |
+| `SARM_Training_Colab.ipynb` | 完整版（含 merge 6 repos + 標注流程） |
+| `SARM_Predict_Visualization.ipynb` | 完整版視覺化 |
+| `CLAUDE.md` | 開發守則 + LeRobot dataset 地雷 + 預測全 0 除錯 checklist |
+| `doc/debug.md` | 已知錯誤排除手冊（Exx 條目） |
+| `doc/guideline.html` | 手動標注完整教學（瀏覽器開啟） |
+| `doc/spec.md` | Cell 設計規格 |
 
 ---
 
@@ -132,42 +155,15 @@ lerobot-train \
 `doc/guideline.html` 是完整的手動標注教學，建議用 VS Code Live Server 開啟，
 可以在修改後自動重新整理頁面。
 
-### 安裝
+1. VS Code → Extensions（`Ctrl+Shift+X`）→ 搜尋 **Live Server**（Ritwick Dey）→ Install
+2. 對 `doc/guideline.html` 按右鍵 → **Open with Live Server**
 
-1. 開啟 VS Code
-2. 前往 Extensions（`Ctrl+Shift+X`）
-3. 搜尋 **Live Server**（作者：Ritwick Dey）
-4. 點 Install
+不想裝 extension 也可直接用瀏覽器開啟：
 
-### 使用
-
-**方法 A：從檔案右鍵**
-1. 在 VS Code 的檔案總管裡，對 `doc/guideline.html` 按右鍵
-2. 選 **Open with Live Server**
-3. 瀏覽器會自動開啟 `http://127.0.0.1:5500/doc/guideline.html`
-
-**方法 B：從狀態列**
-1. 用 VS Code 打開專案資料夾
-2. 點視窗右下角的 **Go Live** 按鈕
-3. 手動在瀏覽器網址列輸入 `http://127.0.0.1:5500/doc/guideline.html`
-
-> 如果不想裝 VS Code Extension，直接用瀏覽器開啟也可以：
-> ```bash
-> xdg-open doc/guideline.html   # Linux
-> open doc/guideline.html        # macOS
-> ```
-
----
-
-## Key Files
-
-| 檔案 | 說明 |
-|------|------|
-| `SARM_Training_Colab.ipynb` | 主要訓練 Notebook（在 Colab 執行） |
-| `doc/guideline.html` | 手動標注完整教學（瀏覽器開啟） |
-| `doc/debug.md` | 已知錯誤排除手冊（E01 ～ E15） |
-| `doc/spec.md` | Cell 設計規格 |
-| `doc/plan.md` | 原始訓練計劃（FurnitureBench，已過期） |
+```bash
+xdg-open doc/guideline.html   # Linux
+open doc/guideline.html        # macOS
+```
 
 ---
 

@@ -113,3 +113,31 @@ python3 -c "import json; json.load(open('SARM_Training_Colab.ipynb')); print('JS
 - 直接 `urllib.request` 抓 `https://raw.githubusercontent.com/huggingface/lerobot/main/src/lerobot/...` 確認簽名跟行為
 - 重點檔案：`src/lerobot/datasets/aggregate.py`、`dataset_metadata.py`、`utils.py`、`utils/constants.py`
 - 看完函式簽名、回傳型別、它怎麼讀本地路徑（`src_meta.root / DEFAULT_DATA_PATH.format(...)`）再決定怎麼修
+
+### 7. SARM 標注必須寫進 `meta/episodes/*.parquet`，不是 `lerobot_annotations.json`
+- SARM 訓練讀的是 `dataset.meta.episodes`（也就是 `meta/episodes/chunk-XXX/file-XXX.parquet`）的這幾欄：
+  - `dense_subtask_names`、`dense_subtask_start_frames`、`dense_subtask_end_frames`（或 fallback 的 `subtask_names` / `subtask_start_frames` / `subtask_end_frames`）
+- `meta/lerobot_annotations.json` 只是 lerobot-annotate UI 的工作檔，**訓練不會讀它**
+- `processor_sarm.py::_load_episode_annotations` 拿不到 `dense_subtask_names`（NULL）就直接 `return None, None, None`；接著 `find_stage_and_tau(subtask_names=None, ...)` 直接走 `pass` 分支回傳 `(stage_idx=0, tau=0.0)` → dense target = 0.0
+- 後果：未標注的 episode 在訓練時 dense target 全是 0；如果未標注佔大宗，整個 dense head 會塌成「永遠輸出 0」
+- **預防驗證**：push 完 dataset 後，下載 `meta/episodes/chunk-000/file-000.parquet`，檢查 `dense_subtask_names` 欄位的 NULL 數量：
+  ```python
+  import pandas as pd
+  df = pd.read_parquet('meta/episodes/chunk-000/file-000.parquet')
+  null_cnt = df['dense_subtask_names'].isna().sum()
+  assert null_cnt == 0, f'{null_cnt}/{len(df)} episodes 缺 dense_subtask_names → SARM 會塌'
+  ```
+- 已知踩過：`Lebruhbruh/SARM-opendata-annotated-fixed`（273 eps，只有 ep 0–7 有 dense 欄位，265 個是 NULL → 訓練 5000 steps 後預測全 0）
+- 重 export 時要把 `lerobot_annotations.json` 的內容 materialize 到 `meta/episodes/*.parquet` 的 `dense_subtask_*` 欄；只搬 JSON 不夠
+
+## SARM 「預測全 0」的除錯 checklist
+
+看到 visualize 出來的 progress 曲線在所有 frame 都黏在 0，依序排查：
+
+1. **dataset 端標注**：先跑上面 §7 的 NULL 檢查。`dense_subtask_names` 大量 NULL 是最常見也最容易漏的元兇——model config 與 `temporal_proportions_dense.json` 都會看起來完全正常（4 個 stage、proportions sum=1.0），但 per-episode 標注其實是空的。
+2. **要看的 episode 有沒有被標注**：visualize cell 指定的 episode index，必須在「有 dense 標注」那批裡。否則就算 model 沒塌，那個 episode 訓練時的 target 也是 0，模型自然學會對它輸出 0。
+3. **stage_probs 訊號**：跑 Cell 13z 之類的診斷 cell，看 `stage_probs`：
+   - 全部接近 one-hot 在 stage 0（[1, 0, 0, 0]）→ stage head 也塌了，幾乎肯定是 §1 的問題
+   - 分布有變化但 progress 仍是 0 → subtask (tau) head 塌了，可能 step 數不足或 loss weight 失衡
+   - 4 個 stage 機率均等（~0.25）→ CLIP embedding 沒分辨力，檢查 transformers 5.x patch（`pooler_output` fallback）有沒有套上
+4. **model config 對齊**：確認 `reward_model.config.dense_subtask_names`、`num_dense_stages`、`dense_temporal_proportions` 跟 dataset 的 `meta/temporal_proportions_dense.json` 一致；不一致代表 model 與 dataset 不是同一輪 annotation 出來的

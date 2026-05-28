@@ -46,7 +46,10 @@
       "Bash(curl -sf https://raw.githubusercontent.com/huggingface/lerobot/main/src/lerobot/rewards/sarm/modeling_sarm.py -o /tmp/sarm_model.py)",
       "Bash(curl -s \"https://api.github.com/search/code?q=repo:huggingface/lerobot+compute_rabc_weights\" -H \"Accept: application/vnd.github+json\")",
       "Bash(curl -s \"https://raw.githubusercontent.com/huggingface/lerobot/main/src/lerobot/configs/policies.py\")",
-      "Bash(curl -s \"https://api.github.com/repos/huggingface/lerobot/contents/src/lerobot\")"
+      "Bash(curl -s \"https://api.github.com/repos/huggingface/lerobot/contents/src/lerobot\")",
+      "Bash(git config *)",
+      "Bash(git check-ignore *)",
+      "Bash(echo \"exit: $?\")"
     ]
   }
 }

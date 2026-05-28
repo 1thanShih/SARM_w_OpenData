@@ -1,0 +1,1038 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SARM Predict-All-Zero 修正計畫</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:            #ffffff;
+    --bg-soft:       #fbfbfd;
+    --bg-card:       #ffffff;
+    --text:          #1d1d1f;
+    --text-soft:     #6e6e73;
+    --text-faint:    #86868b;
+    --border:        #e5e5e7;
+    --border-soft:   #f0f0f2;
+    --accent:        #0066cc;
+    --accent-soft:   #e8f1fb;
+    --danger:        #c0392b;
+    --danger-soft:   #fdecea;
+    --warn:          #b8860b;
+    --warn-soft:     #fff8e1;
+    --ok:            #1f8a3a;
+    --ok-soft:       #e8f5ec;
+    --node-fill:     #ffffff;
+    --node-stroke:   #d2d2d7;
+    --hw-fill:       #f0f7ff;
+    --hw-stroke:     #b8d4f0;
+    --topic-fill:    #fff8e6;
+    --topic-stroke:  #e8d68a;
+    --arrow:         #86868b;
+    --radius:        12px;
+    --radius-sm:     8px;
+    --mono:          'JetBrains Mono', 'SF Mono', ui-monospace, Menlo, Consolas, monospace;
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    margin: 0;
+    font-family: var(--mono);
+    font-weight: 400;
+    color: var(--text);
+    background: var(--bg);
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.65;
+    font-size: 14px;
+  }
+
+  .app {
+    display: grid;
+    grid-template-columns: 240px minmax(0, 1fr);
+    min-height: 100vh;
+  }
+
+  aside.nav {
+    position: sticky;
+    top: 0;
+    align-self: start;
+    height: 100vh;
+    overflow-y: auto;
+    padding: 36px 24px;
+    background: var(--bg-soft);
+    border-right: 1px solid var(--border-soft);
+  }
+
+  aside.nav .brand {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 4px;
+    letter-spacing: -0.01em;
+  }
+
+  aside.nav .brand-sub {
+    font-size: 11px;
+    color: var(--text-faint);
+    margin-bottom: 28px;
+  }
+
+  aside.nav h4 {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-faint);
+    margin: 24px 0 8px;
+  }
+
+  aside.nav ul { list-style: none; margin: 0; padding: 0; }
+
+  aside.nav li a {
+    display: block;
+    padding: 6px 10px;
+    margin: 1px -10px;
+    font-size: 12.5px;
+    color: var(--text-soft);
+    text-decoration: none;
+    border-radius: 6px;
+    transition: background 0.15s, color 0.15s;
+  }
+
+  aside.nav li a:hover {
+    background: rgba(0, 102, 204, 0.06);
+    color: var(--accent);
+  }
+
+  main {
+    padding: 64px 80px 120px;
+    max-width: 1080px;
+  }
+
+  /* hero */
+  .hero {
+    padding: 16px 0 56px;
+    border-bottom: 1px solid var(--border-soft);
+    margin-bottom: 56px;
+  }
+
+  .hero .eyebrow {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--text-faint);
+    margin-bottom: 12px;
+  }
+
+  .hero h1 {
+    font-size: 34px;
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    margin: 0 0 14px;
+    color: var(--text);
+  }
+
+  .hero p.lead {
+    font-size: 15.5px;
+    color: var(--text-soft);
+    max-width: 760px;
+    margin: 0 0 18px;
+    line-height: 1.7;
+  }
+
+  .hero .meta {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 18px;
+  }
+
+  .pill {
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    background: var(--bg-soft);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 4px 12px;
+    color: var(--text-soft);
+  }
+  .pill.danger { color: var(--danger); background: var(--danger-soft); border-color: transparent; }
+  .pill.ok     { color: var(--ok);     background: var(--ok-soft);     border-color: transparent; }
+  .pill.accent { color: var(--accent); background: var(--accent-soft); border-color: transparent; }
+
+  section { margin: 0 0 72px; }
+
+  section > h2 {
+    font-size: 24px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    margin: 0 0 8px;
+    color: var(--text);
+  }
+
+  section > p.section-sub {
+    color: var(--text-soft);
+    margin: 0 0 28px;
+    font-size: 14px;
+    max-width: 760px;
+  }
+
+  h3 {
+    font-size: 17px;
+    font-weight: 500;
+    margin: 28px 0 10px;
+    color: var(--text);
+    letter-spacing: -0.005em;
+  }
+
+  h4 {
+    font-size: 13px;
+    font-weight: 600;
+    margin: 22px 0 8px;
+    color: var(--text);
+  }
+
+  p { color: var(--text-soft); margin: 0 0 12px; }
+
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  code, .mono { font-family: var(--mono); font-size: 0.92em; }
+  p code, li code, td code {
+    background: var(--bg-soft);
+    border: 1px solid var(--border-soft);
+    border-radius: 4px;
+    padding: 1px 6px;
+    color: var(--text);
+    font-size: 0.88em;
+  }
+
+  /* step card */
+  .step {
+    background: var(--bg-card);
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius);
+    padding: 24px 28px 22px;
+    margin: 18px 0;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.02), 0 4px 16px rgba(0,0,0,0.025);
+    position: relative;
+  }
+
+  .step .step-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 8px;
+  }
+
+  .step .step-num {
+    display: inline-block;
+    width: 26px;
+    height: 26px;
+    line-height: 26px;
+    text-align: center;
+    background: var(--accent);
+    color: white;
+    border-radius: 50%;
+    font-size: 12px;
+    font-weight: 600;
+    margin-right: 10px;
+  }
+
+  .step h3 { margin: 0; display: inline-block; vertical-align: middle; }
+
+  .step .tag {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-faint);
+    background: var(--bg-soft);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 3px 10px;
+    white-space: nowrap;
+  }
+  .step .tag.danger { color: var(--danger); background: var(--danger-soft); border-color: transparent; }
+  .step .tag.ok     { color: var(--ok);     background: var(--ok-soft);     border-color: transparent; }
+  .step .tag.accent { color: var(--accent); background: var(--accent-soft); border-color: transparent; }
+
+  .step .why {
+    color: var(--text-soft);
+    font-size: 13px;
+    margin: 4px 0 14px 36px;
+  }
+
+  .step .body {
+    margin-left: 36px;
+  }
+
+  /* code blocks */
+  pre {
+    background: var(--bg-soft);
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius-sm);
+    padding: 14px 18px;
+    overflow-x: auto;
+    font-size: 12.5px;
+    line-height: 1.6;
+    color: var(--text);
+    margin: 12px 0;
+  }
+  pre code { background: none; border: none; padding: 0; font-size: inherit; }
+
+  /* tables */
+  .table-wrap {
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    margin: 16px 0;
+  }
+
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+
+  th {
+    text-align: left;
+    font-weight: 500;
+    color: var(--text-faint);
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    background: var(--bg-soft);
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border-soft);
+  }
+
+  td {
+    padding: 11px 14px;
+    border-bottom: 1px solid var(--border-soft);
+    vertical-align: top;
+    color: var(--text);
+  }
+
+  td:first-child { color: var(--text); font-weight: 500; }
+  td.soft { color: var(--text-soft); }
+  td.num  { text-align: right; font-variant-numeric: tabular-nums; }
+  tr:last-child td { border-bottom: none; }
+
+  /* diagram */
+  .diagram {
+    background: var(--bg-soft);
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius);
+    padding: 24px;
+    margin: 18px 0;
+    overflow-x: auto;
+  }
+
+  .diagram-title {
+    font-size: 11px;
+    color: var(--text-faint);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 14px;
+  }
+
+  .diagram svg { width: 100%; height: auto; display: block; }
+  .diagram svg text { font-family: var(--mono); fill: var(--text); }
+
+  .legend {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+    margin-top: 16px;
+    font-size: 11px;
+    color: var(--text-faint);
+  }
+
+  .legend .swatch {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    margin-right: 6px;
+    vertical-align: middle;
+    border: 1px solid var(--border);
+  }
+  .swatch.bad  { background: var(--danger-soft); border-color: var(--danger); }
+  .swatch.good { background: var(--ok-soft);     border-color: var(--ok); }
+  .swatch.file { background: var(--hw-fill);     border-color: var(--hw-stroke); }
+  .swatch.step { background: #ffffff; }
+
+  /* callouts */
+  .callout {
+    padding: 14px 18px;
+    border-radius: 0 8px 8px 0;
+    font-size: 13px;
+    color: var(--text);
+    margin: 18px 0;
+    background: var(--accent-soft);
+    border-left: 3px solid var(--accent);
+  }
+  .callout strong { color: var(--accent); }
+
+  .callout.danger { background: var(--danger-soft); border-left-color: var(--danger); }
+  .callout.danger strong { color: var(--danger); }
+
+  .callout.warn { background: var(--warn-soft); border-left-color: var(--warn); }
+  .callout.warn strong { color: var(--warn); }
+
+  .callout.ok { background: var(--ok-soft); border-left-color: var(--ok); }
+  .callout.ok strong { color: var(--ok); }
+
+  /* check / cross marks */
+  .check::before { content: '✓ '; color: var(--ok);     font-weight: 600; }
+  .cross::before { content: '✗ '; color: var(--danger); font-weight: 600; }
+  .arrow::before { content: '→ '; color: var(--text-faint); }
+
+  ul.tight {
+    margin: 8px 0;
+    padding-left: 20px;
+    color: var(--text-soft);
+  }
+  ul.tight li { margin: 4px 0; }
+
+  /* numeric callout */
+  .stat-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 16px;
+    margin: 16px 0 22px;
+  }
+
+  .stat {
+    background: var(--bg-card);
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius-sm);
+    padding: 14px 16px;
+  }
+
+  .stat .val {
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: -0.01em;
+  }
+  .stat .val.danger { color: var(--danger); }
+  .stat .val.ok     { color: var(--ok); }
+
+  .stat .lbl {
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-faint);
+    margin-top: 4px;
+  }
+
+  footer {
+    margin-top: 60px;
+    padding-top: 28px;
+    border-top: 1px solid var(--border-soft);
+    color: var(--text-faint);
+    font-size: 11px;
+  }
+
+  @media (max-width: 900px) {
+    .app { grid-template-columns: 1fr; }
+    aside.nav {
+      position: static;
+      height: auto;
+      border-right: none;
+      border-bottom: 1px solid var(--border-soft);
+    }
+    main { padding: 40px 24px 80px; }
+    .hero h1 { font-size: 26px; }
+    .step .body, .step .why { margin-left: 0; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ====================== sidebar ====================== -->
+  <aside class="nav">
+    <div class="brand">SARM Fix</div>
+    <div class="brand-sub">predict-all-zero recovery</div>
+
+    <h4>Overview</h4>
+    <ul>
+      <li><a href="#intro">Why predict = 0</a></li>
+      <li><a href="#flow">Fix flow</a></li>
+    </ul>
+
+    <h4>Steps</h4>
+    <ul>
+      <li><a href="#step-1">1. 準備 token + 環境</a></li>
+      <li><a href="#step-2">2. Dry-run 驗證</a></li>
+      <li><a href="#step-3">3. Push 回 Hub</a></li>
+      <li><a href="#step-4">4. Hub 端驗證</a></li>
+      <li><a href="#step-5">5. Sanity 訓練 (200 步)</a></li>
+      <li><a href="#step-6">6. 全量訓練 (5000 步)</a></li>
+      <li><a href="#step-7">7. 視覺化複查</a></li>
+    </ul>
+
+    <h4>Reference</h4>
+    <ul>
+      <li><a href="#rollback">Rollback</a></li>
+      <li><a href="#cheatsheet">Cheat sheet</a></li>
+    </ul>
+  </aside>
+
+  <!-- ====================== main ====================== -->
+  <main>
+
+    <!-- =============== hero =============== -->
+    <header class="hero" id="intro">
+      <div class="eyebrow">Recovery plan · 2026-05-28</div>
+      <h1>SARM 預測全 0 修正計畫</h1>
+      <p class="lead">
+        Dataset <code>Lebruhbruh/SARM-opendata-annotated-fixed</code> 的
+        <code>meta/episodes/*.parquet</code> 只有 8/273 個 episode 有 subtask 欄位
+        （而且那 8 筆值還是錯的）。其他 265 個的 dense target 在訓練時被當成
+        <code>0</code>，model 因此塌成「永遠輸出 0」。本計畫把
+        <code>lerobot_annotations.json</code>（內容是對的）materialize 進 parquet，
+        然後重新訓練。
+      </p>
+
+      <div class="stat-row">
+        <div class="stat">
+          <div class="val danger">8 / 273</div>
+          <div class="lbl">eps with annotations</div>
+        </div>
+        <div class="stat">
+          <div class="val danger">96.5%</div>
+          <div class="lbl">frames trained on target=0</div>
+        </div>
+        <div class="stat">
+          <div class="val ok">~30 min</div>
+          <div class="lbl">total fix time</div>
+        </div>
+        <div class="stat">
+          <div class="val">5000</div>
+          <div class="lbl">training steps</div>
+        </div>
+      </div>
+
+      <div class="meta">
+        <span class="pill danger">Bug</span>
+        <span class="pill">dense target ≡ 0</span>
+        <span class="pill accent">Fix: materialize parquet</span>
+        <span class="pill">no video re-upload</span>
+      </div>
+    </header>
+
+    <!-- =============== flow diagram =============== -->
+    <section id="flow">
+      <h2>修正流程</h2>
+      <p class="section-sub">
+        紅色路徑 = 現況壞掉的；綠色路徑 = 跑完本計畫後的新狀態。
+      </p>
+
+      <div class="diagram">
+        <div class="diagram-title">Data flow（before / after）</div>
+        <svg viewBox="0 0 980 360" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="ah-bad" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="#c0392b"/>
+            </marker>
+            <marker id="ah-good" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="#1f8a3a"/>
+            </marker>
+          </defs>
+          <style>
+            .fbox  { fill: #f0f7ff; stroke: #b8d4f0; stroke-width: 1; }
+            .sbox  { fill: #ffffff; stroke: #d2d2d7; stroke-width: 1; }
+            .bbox  { fill: #fdecea; stroke: #c0392b; stroke-width: 1; }
+            .gbox  { fill: #e8f5ec; stroke: #1f8a3a; stroke-width: 1; }
+            .ftxt  { font-family: 'JetBrains Mono', monospace; font-size: 12px; fill: #1d1d1f; }
+            .sub   { font-family: 'JetBrains Mono', monospace; font-size: 10px; fill: #86868b; }
+            .badarrow  { stroke: #c0392b; stroke-width: 1.4; fill: none; stroke-dasharray: 4 3; }
+            .goodarrow { stroke: #1f8a3a; stroke-width: 1.4; fill: none; }
+          </style>
+
+          <!-- source: annotations.json -->
+          <rect class="fbox" x="20" y="140" width="170" height="60" rx="10"/>
+          <text class="ftxt" x="105" y="168" text-anchor="middle">lerobot_annotations</text>
+          <text class="sub"  x="105" y="184" text-anchor="middle">.json · 273 eps ✓</text>
+
+          <!-- broken parquet -->
+          <rect class="bbox" x="270" y="40" width="200" height="64" rx="10"/>
+          <text class="ftxt" x="370" y="66" text-anchor="middle">meta/episodes/*.parquet</text>
+          <text class="sub"  x="370" y="84" text-anchor="middle">8/273 dense annotated</text>
+          <text class="sub"  x="370" y="97" text-anchor="middle">(現況 — 壞的)</text>
+
+          <!-- fixed parquet -->
+          <rect class="gbox" x="270" y="240" width="200" height="64" rx="10"/>
+          <text class="ftxt" x="370" y="266" text-anchor="middle">meta/episodes/*.parquet</text>
+          <text class="sub"  x="370" y="284" text-anchor="middle">273/273 dense annotated</text>
+          <text class="sub"  x="370" y="297" text-anchor="middle">(修正後 — 好的)</text>
+
+          <!-- training -->
+          <rect class="sbox" x="560" y="40" width="160" height="64" rx="10"/>
+          <text class="ftxt" x="640" y="68" text-anchor="middle">SARM 訓練</text>
+          <text class="sub"  x="640" y="86" text-anchor="middle">target ≡ 0</text>
+
+          <rect class="sbox" x="560" y="240" width="160" height="64" rx="10"/>
+          <text class="ftxt" x="640" y="268" text-anchor="middle">SARM 訓練</text>
+          <text class="sub"  x="640" y="286" text-anchor="middle">target 隨進度遞增</text>
+
+          <!-- model output -->
+          <rect class="bbox" x="790" y="40" width="170" height="64" rx="10"/>
+          <text class="ftxt" x="875" y="68" text-anchor="middle">predict ≡ 0</text>
+          <text class="sub"  x="875" y="86" text-anchor="middle">壞</text>
+
+          <rect class="gbox" x="790" y="240" width="170" height="64" rx="10"/>
+          <text class="ftxt" x="875" y="268" text-anchor="middle">predict 0 → 1 曲線</text>
+          <text class="sub"  x="875" y="286" text-anchor="middle">好</text>
+
+          <!-- script -->
+          <rect class="sbox" x="100" y="245" width="150" height="56" rx="10"/>
+          <text class="ftxt" x="175" y="270" text-anchor="middle">materialize_dense_</text>
+          <text class="ftxt" x="175" y="285" text-anchor="middle">annotations.py</text>
+
+          <!-- arrows: broken path -->
+          <path class="badarrow" d="M190,160 L270,80" marker-end="url(#ah-bad)"/>
+          <path class="badarrow" d="M470,72 L560,72" marker-end="url(#ah-bad)"/>
+          <path class="badarrow" d="M720,72 L790,72" marker-end="url(#ah-bad)"/>
+
+          <!-- arrows: good path -->
+          <path class="goodarrow" d="M105,200 L155,245" marker-end="url(#ah-good)"/>
+          <path class="goodarrow" d="M250,272 L270,272" marker-end="url(#ah-good)"/>
+          <path class="goodarrow" d="M470,272 L560,272" marker-end="url(#ah-good)"/>
+          <path class="goodarrow" d="M720,272 L790,272" marker-end="url(#ah-good)"/>
+        </svg>
+        <div class="legend">
+          <span><span class="swatch file"></span>data file</span>
+          <span><span class="swatch step"></span>process</span>
+          <span><span class="swatch bad"></span>broken (today)</span>
+          <span><span class="swatch good"></span>fixed (after this plan)</span>
+        </div>
+      </div>
+
+      <div class="callout">
+        <strong>修正範圍 —</strong> 只重寫一個檔案：
+        <code>Lebruhbruh/SARM-opendata-annotated-fixed/meta/episodes/chunk-000/file-000.parquet</code>
+        （~840 KB）。Videos、data parquet、stats.json、temporal_proportions_*.json 都不動。
+      </div>
+    </section>
+
+    <!-- =============== STEP 1 =============== -->
+    <section id="step-1">
+      <h2>Step 1 &mdash; 準備 HF write token + 環境</h2>
+      <p class="section-sub">
+        修正會推回 Hub，所以需要 write token。本地 dry-run 不需要 token。
+      </p>
+
+      <div class="step">
+        <div class="step-head">
+          <div><span class="step-num">1</span><h3>取得 token、切到工作目錄</h3></div>
+          <span class="tag">2 分鐘</span>
+        </div>
+        <div class="why">為什麼：dry-run 跟 push 共用同一支腳本，差別只在 <code>DRY_RUN</code> 環境變數；先把 token 跟工作目錄定位好，後面 step 直接接。</div>
+
+        <div class="body">
+          <h4>1.1 確認在 repo 根目錄</h4>
+<pre><code>cd /home/ethan/Desktop/SARM_w_OpenData
+ls materialize_dense_annotations.py    # 應該存在</code></pre>
+
+          <h4>1.2 拿到 HF write token</h4>
+          <p>到 <a href="https://huggingface.co/settings/tokens" target="_blank">huggingface.co/settings/tokens</a>
+             建一個 <code>write</code> 權限的 token（或用既有的 write token 也行）。</p>
+
+          <div class="callout warn">
+            <strong>不要 commit token —</strong>
+            把 token 放在環境變數，不要寫進 <code>token.txt</code> commit 上去；
+            <code>.gitignore</code> 雖然應該已經擋了，還是要避免不必要的曝光。
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =============== STEP 2 =============== -->
+    <section id="step-2">
+      <h2>Step 2 &mdash; Dry-run 驗證</h2>
+      <p class="section-sub">
+        先在本地把腳本跑完整一次但 <em>不</em> push，檢查產出的 parquet 數值合理才往下走。
+      </p>
+
+      <div class="step">
+        <div class="step-head">
+          <div><span class="step-num">2</span><h3>跑 dry-run + spot check</h3></div>
+          <span class="tag">3 分鐘</span>
+        </div>
+        <div class="why">為什麼：一旦 push 到 Hub 就會生新 commit、覆寫線上 parquet。事前在本地驗證 273/273 episode 都有合理的 <code>dense_subtask_end_frames[-1] ≈ length</code>，避免推上去才發現算錯。</div>
+
+        <div class="body">
+          <h4>2.1 跑 dry-run</h4>
+<pre><code>DRY_RUN=1 python3 materialize_dense_annotations.py</code></pre>
+
+          <h4>2.2 預期輸出</h4>
+<pre><code>[1/6] Download meta/ from Lebruhbruh/SARM-opendata-annotated-fixed ...
+      annotations.json: 273 episodes (original indices)
+[2/6] Found 1 episode parquet file(s)
+[3/6] Build new columns from annotations.json ...
+      file-000.parquet: 273 rows
+      ✓ rewrote file-000.parquet
+      total processed: 273 episodes (annotations.json has 273)
+[4/6] Local sanity check ...
+      ✓ file-000.parquet::dense_subtask_names: 0 NULL/empty
+      ✓ file-000.parquet::sparse_subtask_names: 0 NULL/empty
+      ✓ file-000.parquet::subtask_names: 0 NULL/empty
+[5/6] DRY_RUN=1: 跳過 push。...
+[6/6] Done (local only).</code></pre>
+
+          <h4>2.3 手動 spot check（強烈建議）</h4>
+<pre><code>python3 &lt;&lt;'EOF'
+import pandas as pd
+df = pd.read_parquet('/tmp/sarm_materialize/snapshot/meta/episodes/chunk-000/file-000.parquet')
+print(f'total rows: {len(df)}')
+# 驗證 dense 標注覆蓋率
+import numpy as np
+cov = []
+for i in range(len(df)):
+    row = df.iloc[i]
+    length = int(row['length'])
+    end_f = list(row['dense_subtask_end_frames'])
+    cov.append(end_f[-1] / length if end_f else 0)
+arr = np.array(cov)
+print(f'dense coverage: min={arr.min():.3f} mean={arr.mean():.3f}')
+assert arr.min() &gt;= 0.95, '有 episode 覆蓋率 &lt; 95%，annotations 可能有問題'
+print('✓ 全部 episode dense 覆蓋率 ≥ 95%')
+EOF</code></pre>
+
+          <div class="callout ok">
+            <strong>過關條件 —</strong>
+            sanity check 看到三個 <code>0 NULL/empty</code> + spot check 印出
+            <code>min ≥ 0.999</code> 才能進 Step 3。
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =============== STEP 3 =============== -->
+    <section id="step-3">
+      <h2>Step 3 &mdash; Push 修好的 parquet 回 Hub</h2>
+      <p class="section-sub">
+        實際對 Hub 寫資料的一步。覆寫的只有 <code>meta/episodes/</code>，
+        videos / data / stats / temporal_proportions 都不動。同時把 <code>v3.0</code>
+        git tag 重新指到新 HEAD（SARM 訓練必用 v3.0 tag）。
+      </p>
+
+      <div class="step">
+        <div class="step-head">
+          <div><span class="step-num">3</span><h3>正式 push</h3></div>
+          <span class="tag danger">破壞性 · 對 Hub 寫資料</span>
+        </div>
+        <div class="why">為什麼：用 <code>upload_folder</code> 只 push <code>meta/episodes/</code> 子資料夾，最小化變動面積；v3.0 tag 必須跟著移動，否則 <code>LeRobotDataset</code> 還是會抓到舊版本（內部 <code>get_safe_version</code> 鎖 v3.0）。</div>
+
+        <div class="body">
+          <h4>3.1 設定環境變數並執行</h4>
+<pre><code>export HF_TOKEN=&lt;你剛剛拿到的 write token&gt;
+DRY_RUN=0 python3 materialize_dense_annotations.py</code></pre>
+
+          <h4>3.2 預期輸出（最後幾行）</h4>
+<pre><code>[5/6] Push meta/episodes/ back to Lebruhbruh/SARM-opendata-annotated-fixed ...
+      ✓ pushed
+[6/6] Re-pin v3.0 tag to new HEAD ...
+      ✓ v3.0 tag moved
+
+✓ Done. Dataset: https://huggingface.co/datasets/Lebruhbruh/SARM-opendata-annotated-fixed</code></pre>
+
+          <div class="callout danger">
+            <strong>失敗時 —</strong>
+            如果 <code>upload_folder</code> 過了但 <code>create_tag</code> 失敗（403 / 權限不足），
+            <em>不要</em> 重跑整支腳本（會疊一個新 commit）。改成手動補 tag：
+<pre><code>python3 -c "
+from huggingface_hub import HfApi
+api = HfApi(token='YOUR_TOKEN')
+try: api.delete_tag('Lebruhbruh/SARM-opendata-annotated-fixed', tag='v3.0', repo_type='dataset')
+except: pass
+api.create_tag('Lebruhbruh/SARM-opendata-annotated-fixed', tag='v3.0', repo_type='dataset')
+print('v3.0 moved')
+"</code></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =============== STEP 4 =============== -->
+    <section id="step-4">
+      <h2>Step 4 &mdash; Hub 端驗證</h2>
+      <p class="section-sub">
+        從 Hub 重新下載 parquet 並斷言 <code>0 NULL</code>，
+        確認線上版本真的是新的（不是本地 cache）。
+      </p>
+
+      <div class="step">
+        <div class="step-head">
+          <div><span class="step-num">4</span><h3>強制刷新下載 + assert</h3></div>
+          <span class="tag">2 分鐘</span>
+        </div>
+        <div class="why">為什麼：<code>hf_hub_download</code> 預設會用本地 cache，可能拿到 push 前的舊版本。<code>force_download=True</code> 跟 <code>revision='v3.0'</code> 一起用，確認 Hub 上的 v3.0 tag 真的指向修好的 commit。</div>
+
+        <div class="body">
+<pre><code>python3 &lt;&lt;'EOF'
+import pandas as pd
+from huggingface_hub import hf_hub_download
+
+p = hf_hub_download(
+    'Lebruhbruh/SARM-opendata-annotated-fixed',
+    'meta/episodes/chunk-000/file-000.parquet',
+    repo_type='dataset',
+    revision='v3.0',
+    force_download=True,
+)
+df = pd.read_parquet(p)
+empty = sum(1 for v in df['dense_subtask_names']
+            if v is None or (hasattr(v, '__len__') and len(v) == 0))
+print(f'dense_subtask_names empty: {empty}/{len(df)}')
+assert empty == 0, '⚠ Hub 上還是有空的 dense_subtask_names'
+
+# 也順便看一筆中段 episode 的內容
+import json
+row = df.iloc[150]
+print(f'ep 150 length={row["length"]}, dense_end_frames={list(row["dense_subtask_end_frames"])}')
+print('✓ Hub v3.0 確認完整')
+EOF</code></pre>
+
+          <div class="callout ok">
+            <strong>過關條件 —</strong> 看到
+            <code>dense_subtask_names empty: 0/273</code> + 中段 episode 的
+            <code>dense_end_frames</code> 看起來合理（最後一個 frame ≈ episode length）。
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =============== STEP 5 =============== -->
+    <section id="step-5">
+      <h2>Step 5 &mdash; Sanity 訓練（200 步）</h2>
+      <p class="section-sub">
+        正式跑 5000 步前先用 200 步快速確認 loss 走勢合理，
+        避免再花 60 分鐘訓練才發現修錯了什麼。
+      </p>
+
+      <div class="step">
+        <div class="step-head">
+          <div><span class="step-num">5</span><h3>在 Colab 跑 200 步試水</h3></div>
+          <span class="tag">5–8 分鐘</span>
+        </div>
+        <div class="why">為什麼：5000 步沒進度顯示時很難中途判斷對錯；200 步約 5 分鐘，看 <code>dense_subtask_loss</code> 從一開始就在掉（不是黏住）就 OK，可以放心跑全量。</div>
+
+        <div class="body">
+          <h4>5.1 開 <code>SARM_Training_Colab.ipynb</code></h4>
+          <p>按順序跑 Cell 0 → Cell 4b（環境、login、確認 dataset 273 eps）。</p>
+
+          <h4>5.2 改 Cell 12 的訓練參數</h4>
+<pre><code># 把這行：
+'--steps=5000',
+'--save_freq=2500',
+# 改成：
+'--steps=200',
+'--save_freq=200',</code></pre>
+
+          <h4>5.3 重點觀察</h4>
+          <ul class="tight">
+            <li>第一個 log step 就要看到 <code>dense_subtask_loss</code> 跟 <code>dense_stage_loss</code> 兩個都 &gt; 0（不是 0.0000）</li>
+            <li>跑到 step 100 左右兩個 loss 應該都明顯下降</li>
+            <li>200 步跑完會 push 一個 checkpoint 到 Hub，但這版本只是 sanity，不要拿去做 viz</li>
+          </ul>
+
+          <div class="callout warn">
+            <strong>如果 loss 從頭就 0 或不動 —</strong>
+            代表 Step 3 沒推上去（或 v3.0 tag 沒移動）。回 Step 4 重新驗證 Hub 內容。
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =============== STEP 6 =============== -->
+    <section id="step-6">
+      <h2>Step 6 &mdash; 全量訓練（5000 步）</h2>
+      <p class="section-sub">
+        Sanity 過了之後改回原本參數重訓。會覆寫 Hub 上的
+        <code>Lebruhbruh/sarm-charging-bimanual</code>。
+      </p>
+
+      <div class="step">
+        <div class="step-head">
+          <div><span class="step-num">6</span><h3>正式訓練</h3></div>
+          <span class="tag">45–90 分鐘</span>
+        </div>
+        <div class="why">為什麼：Colab A100 上 5000 步 batch=64 大約 1 小時。Notebook 的 <code>progress_stage</code> 心跳每 30 秒一次，可以放心去做別的事，斷線重連也看得到還在跑。</div>
+
+        <div class="body">
+          <h4>6.1 把 Cell 12 的參數改回</h4>
+<pre><code>'--steps=5000',
+'--save_freq=2500',</code></pre>
+
+          <h4>6.2 跑 Cell 12</h4>
+          <p>訓練過程跟原本一樣，只是這次每一個 batch 拿到的 dense target 都是有效的。</p>
+
+          <h4>6.3 期望 loss 行為</h4>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Step</th><th>sparse_stage_loss</th><th>sparse_subtask_loss</th><th>dense_stage_loss</th><th>dense_subtask_loss</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>0</td><td>~0.0</td><td>~0.08</td><td>~1.4</td><td>~0.15</td></tr>
+                <tr><td>500</td><td>~0.0</td><td>~0.03</td><td>~0.8</td><td>~0.05</td></tr>
+                <tr><td>2500</td><td>~0.0</td><td>~0.02</td><td>~0.4</td><td>~0.02</td></tr>
+                <tr><td>5000</td><td>~0.0</td><td>~0.01</td><td>~0.2</td><td>~0.01</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="soft" style="font-size:11px;color:var(--text-faint);">
+            （數字是粗估，跟 dataset 細節有關；重點是 dense_* 兩個都要持續下降，不能黏在初始值。）
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- =============== STEP 7 =============== -->
+    <section id="step-7">
+      <h2>Step 7 &mdash; 視覺化複查</h2>
+      <p class="section-sub">
+        回到 <code>SARM_Predict_Visualization.ipynb</code> 跑視覺化，確認預測曲線確實是 0→1 的單調曲線。
+      </p>
+
+      <div class="step">
+        <div class="step-head">
+          <div><span class="step-num">7</span><h3>跑 viz notebook</h3></div>
+          <span class="tag">10–15 分鐘</span>
+        </div>
+        <div class="why">為什麼：最終的驗收。如果這步預測曲線還是黏在 0，代表 fix 沒生效（最常見原因：Step 6 訓練時用的還是舊 cache 的 dataset，沒拿到新 v3.0）。</div>
+
+        <div class="body">
+          <h4>7.1 預設 EVAL_EPISODES 直接跑</h4>
+          <p>Cell 1 的 <code>EVAL_EPISODES = [21, 26, 47, 50, 229, 244]</code> 不用改——這六個都在原本沒標注的 265 裡，正好用來驗證 fix 有效。</p>
+
+          <h4>7.2 跑 Cell 0–Cell 14b（PNG 視覺化）</h4>
+          <p>看 6 張 <code>sarm_prediction_ep&lt;N&gt;_dense.png</code>。</p>
+
+          <h4>7.3 過關條件</h4>
+          <ul class="tight">
+            <li class="check">Progress 曲線單調遞增（0 → 1），不再黏在 0</li>
+            <li class="check">4 個 subtask 的 stage probability 在不同時段有明顯峰值</li>
+            <li class="check">Stage 切換點對應的 frame 跟視覺上動作切換對得起來</li>
+          </ul>
+
+          <h4>7.4 加分項：跑 Cell 14c 產 MP4</h4>
+          <p>影片 + 進度條同步播放，最容易直觀判斷預測對不對。</p>
+
+          <div class="callout ok">
+            <strong>到這裡就完成 —</strong> 整段從修 dataset 到看到正確視覺化，
+            假設 token 已備好、Colab GPU 沒等候，大約 80–120 分鐘。
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =============== rollback =============== -->
+    <section id="rollback">
+      <h2>Rollback</h2>
+      <p class="section-sub">
+        如果 Step 3 push 後發現腳本邏輯有錯，要把 Hub 還原成 push 前的狀態。
+      </p>
+
+      <div class="step">
+        <div class="step-head">
+          <div><h3>用 git 歷史 revert</h3></div>
+          <span class="tag">5 分鐘</span>
+        </div>
+
+        <div class="body">
+          <p>HF dataset 也是 git repo。Push 前的 commit SHA 一定還在 history 裡，把 v3.0 tag 重新指回去就好：</p>
+<pre><code>python3 &lt;&lt;'EOF'
+from huggingface_hub import HfApi, list_repo_commits
+api = HfApi(token='YOUR_WRITE_TOKEN')
+# 列最近的 commits
+commits = list(list_repo_commits('Lebruhbruh/SARM-opendata-annotated-fixed', repo_type='dataset'))
+for c in commits[:5]:
+    print(f'{c.commit_id[:10]}  {c.created_at}  {c.title}')
+# 確認哪個是 push 之前的，然後：
+OLD_SHA = '貼上你想 revert 到的 commit SHA'
+try: api.delete_tag('Lebruhbruh/SARM-opendata-annotated-fixed', tag='v3.0', repo_type='dataset')
+except: pass
+api.create_tag('Lebruhbruh/SARM-opendata-annotated-fixed', tag='v3.0',
+               repo_type='dataset', revision=OLD_SHA)
+EOF</code></pre>
+
+          <div class="callout">
+            <strong>不需要刪 commit —</strong>
+            HF dataset 沒有「force push 砍歷史」這種事；只要把 v3.0 tag 移走，
+            LeRobotDataset 就讀不到新版本，等同於 rollback。
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =============== cheatsheet =============== -->
+    <section id="cheatsheet">
+      <h2>One-screen cheat sheet</h2>
+      <p class="section-sub">複製貼上版的所有指令，假設 token 已 export。</p>
+
+      <div class="step">
+        <div class="step-head">
+          <div><h3>從 Step 1 跑到 Step 4 的完整 shell</h3></div>
+          <span class="tag accent">copy-paste</span>
+        </div>
+
+        <div class="body">
+<pre><code># 1. 環境
+cd /home/ethan/Desktop/SARM_w_OpenData
+export HF_TOKEN=&lt;write_token&gt;
+
+# 2. dry-run
+DRY_RUN=1 python3 materialize_dense_annotations.py
+
+# 3. 本地 spot check
+python3 -c "
+import pandas as pd, numpy as np
+df = pd.read_parquet('/tmp/sarm_materialize/snapshot/meta/episodes/chunk-000/file-000.parquet')
+cov = np.array([list(r['dense_subtask_end_frames'])[-1] / int(r['length'])
+                for _, r in df.iterrows()])
+assert cov.min() &gt;= 0.95
+print(f'✓ {len(df)} eps, dense coverage min={cov.min():.3f}')
+"
+
+# 4. 正式 push
+DRY_RUN=0 python3 materialize_dense_annotations.py
+
+# 5. Hub 端驗證
+python3 -c "
+import pandas as pd
+from huggingface_hub import hf_hub_download
+p = hf_hub_download('Lebruhbruh/SARM-opendata-annotated-fixed',
+                    'meta/episodes/chunk-000/file-000.parquet',
+                    repo_type='dataset', revision='v3.0', force_download=True)
+df = pd.read_parquet(p)
+empty = sum(1 for v in df['dense_subtask_names']
+            if v is None or (hasattr(v,'__len__') and len(v)==0))
+assert empty == 0
+print(f'✓ Hub v3.0 OK: {len(df)} eps, 0 empty')
+"
+
+# 6. 換 Colab 跑 Step 5–7（200 sanity → 5000 全量 → viz）</code></pre>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      Generated 2026-05-28 ·
+      Plan for <a href="https://huggingface.co/datasets/Lebruhbruh/SARM-opendata-annotated-fixed">Lebruhbruh/SARM-opendata-annotated-fixed</a> ·
+      Model <a href="https://huggingface.co/Lebruhbruh/sarm-charging-bimanual">Lebruhbruh/sarm-charging-bimanual</a>
+    </footer>
+
+  </main>
+</div>
+</body>
+</html>
